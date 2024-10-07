@@ -1,12 +1,7 @@
-from axi_interface import *
-from audio_processing import *
-from post_processing import *
+from axi_interface import stream_audio_from_axi
 
 if __name__ == "__main__":
     print("Starting...the Marvellous Voice Activated LED!")
-    # axi interface stuff
-    # audio processing + api stuff 
-    # post processing stuff 
-    # axi interface stuff again 
+    stream_audio_from_axi()
     
     
