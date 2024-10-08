@@ -1,13 +1,18 @@
-from hardware_control import light_switch
-from openai import OpenAI
-import string
+
 import re
+import string
+from openai import OpenAI
+import hardware_control
 
 buffer = ""
 system_prompt = """
-You are a voice processing assistant. Never output a response of your own, and if you don't understand, output the transcription exactly as it appears with punctuation, filler words, and spaces removed. 
-Always translate the transcription into English if needed. If any part of the string matches 'Light On', 'Light Off', or 'Hey Doc', replace those parts of the string with these exact variants regardless of the phrasing. For instance, translate 'apague la luz' or any equivalent to 'light off'. 
-For everything else, remove all punctuation, filler words, and spaces between words, without altering the remaining content. Lowercase everything."""
+You are a voice processing assistant. Never output a response of your own, and if you don't understand, 
+output the transcription exactly as it appears with punctuation, filler words, and spaces removed. 
+Always translate the transcription into English if needed. If any part of the string matches 'Light On', 
+'Light Off', 'Brightness 1' or any other number, or 'Hey Doc', replace those parts of the string with 
+these exact variants regardless of the phrasing. For instance, translate 'apague la luz' or any equivalent to 'light off'. 
+After you're done, remove all punctuation, filler words, and spaces between words, without altering 
+the remaining content. Lowercase everything."""
 
 def generate_corrected_transcript(transcription):
     print(f"Initial audio: {transcription}")
@@ -42,6 +47,10 @@ def scan_for_key_phrase(transcription):
     
     key_phrase_on = 'heydoclighton'
     key_phrase_off = 'heydoclightoff'
+    key_phrase_level_1 = 'heydocbrightness1'
+    key_phrase_level_2 = 'heydocbrightness2'
+    key_phrase_level_3 = 'heydocbrightness3'
+    key_phrase_level_4 = 'heydocbrightness4'
     
     transcription = generate_corrected_transcript(transcription)
     transcription = (transcription.lower()).replace(" ", "")
@@ -51,10 +60,24 @@ def scan_for_key_phrase(transcription):
     buffer += transcription
 
     if key_phrase_on in buffer:
-        light_switch(True)
+        hardware_control.light_switch(hardware_control.LED_ON)
+        buffer=""
     elif key_phrase_off in buffer:
-        light_switch(False)
+        hardware_control.light_switch(hardware_control.LED_OFF)
+        buffer=""
+    elif key_phrase_level_1 in buffer:
+        hardware_control.light_switch(hardware_control.LED_LEVEL_1)
+        buffer=""
+    elif key_phrase_level_2 in buffer:
+        hardware_control.light_switch(hardware_control.LED_LEVEL_2)
+        buffer=""
+    elif key_phrase_level_3 in buffer:
+        hardware_control.light_switch(hardware_control.LED_LEVEL_3)
+        buffer=""
+    elif key_phrase_level_4 in buffer:
+        hardware_control.light_switch(hardware_control.LED_LEVEL_4)
+        buffer=""
     else:
-        buffer = buffer [-len(key_phrase_on):] # keeps last part of buffer in case overlap
+        buffer = buffer [-len(key_phrase_level_1):] # keeps last part of buffer in case overlap
 
 
