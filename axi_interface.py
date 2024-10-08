@@ -24,30 +24,30 @@ def stream_audio_from_mic(chunk_duration=3):
     print("Calibrated. Say something!")               
             
     # Continuously takes in audio in 3s chunks
-    while True:
-        try:
-            with source:
-                audio = r.listen(source, phrase_time_limit=chunk_duration)  # Capture a 3-second chunk of audio
+    try:
+        while True:
+            try:
+                with source:
+                    audio = r.listen(source, phrase_time_limit=chunk_duration)  # Capture a 3-second chunk of audio
+                
+                # Convert the AudioData instance into a WAV file
+                wav_data = audio.get_wav_data()
+                wav_file = io.BytesIO(wav_data)
+                wav_file.name = "audio.wav"
+
+                transcription = whisper_send_and_receive(client, wav_file)
+                scan_for_key_phrase(transcription)
             
-            # Convert the AudioData instance into a WAV file
-            wav_data = audio.get_wav_data()
-            wav_file = io.BytesIO(wav_data)
-            wav_file.name = "audio.wav"
+            except sr.UnknownValueError:
+                print("Could not understand audio")
+            except sr.RequestError as e:
+                print(f"Error with speech recognition: {e}")
+            except Exception as e:
+                print(f"Error during transcription: {e}")
 
-            transcription = whisper_send_and_receive(client, wav_file)
-            print("im here u know")
-            scan_for_key_phrase(transcription)
-        
-        except sr.UnknownValueError:
-            print("Could not understand audio")
-        except sr.RequestError as e:
-            print(f"Error with speech recognition: {e}")
-        except Exception as e:
-            print(f"Error during transcription: {e}")
-
-        time.sleep(0.3)
-
-    print("Goodbye! The Marvellous Voice Activated LED awaits your return!")
+            time.sleep(0.3)
+    except KeyboardInterrupt:
+        print("\nGoodbye! The Marvellous Voice Activated LED awaits your return!")
 
 # def stream_audio_from_axi():
 #     # Logic to receive data from the AXI bus
