@@ -4,13 +4,16 @@ import string
 import re
 
 buffer = ""
-system_prompt = "You are a voice processing assistant. Never output a response of your own, if you don't understand just output nothing. First, translate the transcription into English if needed. If the meaning in English or otherwise matches 'Light On' or 'Light Off', or 'Hey Doc', replace the corresponding phrase with that variant of its meaning. Remove all punctuation, filler words, and remove all spaces between words. Lowercase everything."
+system_prompt = """
+You are a voice processing assistant. Never output a response of your own, and if you don't understand, output the transcription exactly as it appears with punctuation, filler words, and spaces removed. 
+Always translate the transcription into English if needed. If any part of the string matches 'Light On', 'Light Off', or 'Hey Doc', replace those parts of the string with these exact variants regardless of the phrasing. For instance, translate 'apague la luz' or any equivalent to 'light off'. 
+For everything else, remove all punctuation, filler words, and spaces between words, without altering the remaining content. Lowercase everything."""
 
 def generate_corrected_transcript(transcription):
-    print(f"Initial audio {transcription}")
+    print(f"Initial audio: {transcription}")
     client = OpenAI()
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         #temperature=0,
         messages=[
             {
