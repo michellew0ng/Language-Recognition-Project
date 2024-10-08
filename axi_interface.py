@@ -1,9 +1,7 @@
 import socket
 import speech_recognition as sr
-import pyaudio
 import io
 import time
-import wave
 from openai import OpenAI
 from audio_processing import whisper_send_and_receive
 from post_processing import scan_for_key_phrase
@@ -25,7 +23,6 @@ def stream_audio_from_mic(chunk_duration=3):
         r.adjust_for_ambient_noise(source)
     print("Calibrated. Say something!")               
             
-
     # Continuously takes in audio in 3s chunks
     while True:
         try:
@@ -38,14 +35,8 @@ def stream_audio_from_mic(chunk_duration=3):
             wav_file.name = "audio.wav"
 
             transcription = whisper_send_and_receive(client, wav_file)
-            modified_transcription = transcription.lower()
-            print(modified_transcription)
-
-            scan_for_key_phrase(modified_transcription)
-
-            if "stop" in modified_transcription: 
-                print("Stopping immediately!")
-                break
+            print("im here u know")
+            scan_for_key_phrase(transcription)
         
         except sr.UnknownValueError:
             print("Could not understand audio")
