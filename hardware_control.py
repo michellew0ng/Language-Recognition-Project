@@ -6,7 +6,8 @@ LED_LEVEL_1 = 1
 LED_LEVEL_2 = 2
 LED_LEVEL_3 = 3
 LED_LEVEL_4 = 4
-LED_ON = 5
+LED_LEVEL_5 = 5
+LED_ON = 6
 
 ETHERNET_IP = ''
 ETHERNET_PORT = 8080
@@ -14,7 +15,7 @@ BUFFER_SIZE = 4096 #4KB
 
 # LED state dictated by levels where 0 is off, 5 is fully on, and 1-5 are discrete brightness levels
 led_state = LED_OFF
-previous_on_state = LED_ON # so when the LED turns back on, it returns to former brightness
+previous_on_state = LED_LEVEL_5 # so when the LED turns back on, it returns to former brightness
 
 # Sends a command to the board
 # def send_signal(command):
@@ -35,7 +36,7 @@ def send_signal(light_level):
         print("LED on at brightness 3!")
     elif light_level == LED_LEVEL_4:
         print("LED on at brightness 4!")
-    elif light_level == LED_ON:
+    elif light_level == LED_LEVEL_5:
         print("LED on at full brightness!")
     else:
         print("Unknown light level choice")
@@ -44,8 +45,6 @@ def send_signal(light_level):
 def light_switch(requested_state):
     global led_state
     global previous_on_state
-    print(f"Requested state: {requested_state}")
-    print(f"Current led state: {led_state}")
     if requested_state != led_state:
         if led_state == LED_OFF and requested_state == LED_ON:
             send_signal(previous_on_state)
@@ -56,7 +55,6 @@ def light_switch(requested_state):
             previous_on_state = led_state
             send_signal(requested_state)
 
-    print(f"Current previous on: {previous_on_state}")
     
             
 
