@@ -45,7 +45,6 @@ def stream_audio_from_mic(chunk_duration=3):
             except Exception as e:
                 print(f"Error during transcription: {e}")
 
-            time.sleep(0.3)
     except KeyboardInterrupt:
         print("\nGoodbye! The Marvellous Voice Activated LED awaits your return!")
 
