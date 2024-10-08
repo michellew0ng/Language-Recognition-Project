@@ -7,7 +7,7 @@ buffer = ""
 system_prompt = "You are a voice processing assistant. Never output a response of your own, if you don't understand just output nothing. First, translate the transcription into English if needed. If the meaning in English or otherwise matches 'Light On' or 'Light Off', or 'Hey Doc', replace the corresponding phrase with that variant of its meaning. Remove all punctuation, filler words, and remove all spaces between words. Lowercase everything."
 
 def generate_corrected_transcript(transcription):
-    print(transcription)
+    print(f"Initial audio {transcription}")
     client = OpenAI()
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
