@@ -22,14 +22,14 @@ def stream_audio_from_mic(chunk_duration=3):
         print("Callibrating for ambient noise...")
         r.adjust_for_ambient_noise(source)
     print("Calibrated. Say something!")               
-            
+
     # Continuously takes in audio in 3s chunks
     try:
         while True:
             try:
                 with source:
                     audio = r.listen(source, phrase_time_limit=chunk_duration)  # Capture a 3-second chunk of audio
-                
+    
                 # Convert the AudioData instance into a WAV file
                 wav_data = audio.get_wav_data()
                 wav_file = io.BytesIO(wav_data)
@@ -46,7 +46,7 @@ def stream_audio_from_mic(chunk_duration=3):
                 print(f"Error during transcription: {e}")
 
     except KeyboardInterrupt:
-        print("\nGoodbye! The Marvellous Voice Activated LED awaits your return!")
+       print("\nGoodbye! The Marvellous Voice Activated LED awaits your return!")
 
 # def stream_audio_from_axi():
 #     # Logic to receive data from the AXI bus
