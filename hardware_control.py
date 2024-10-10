@@ -38,6 +38,9 @@ def send_signal(light_level):
         print("LED on at brightness 4!")
     elif light_level == LED_LEVEL_5:
         print("LED on at full brightness!")
+    elif light_level == LED_ON:
+        pass
+        #print("LED is already on!")
     else:
         print("Unknown light level choice")
 
@@ -45,18 +48,27 @@ def send_signal(light_level):
 def light_switch(requested_state):
     global led_state
     global previous_on_state
-    if requested_state != led_state:
-        if led_state == LED_OFF and requested_state == LED_ON:
-            send_signal(previous_on_state)
-        elif requested_state == LED_OFF:
-            previous_on_state = led_state 
-            send_signal(requested_state)
-        else:
-            previous_on_state = led_state
-            send_signal(requested_state)
-
+    print(f"requested state {requested_state}")
+    print(f"led_state {led_state}")
     
-            
-
-
-        
+    if requested_state == LED_ON:
+        if led_state != LED_OFF:
+            # If the LED is already on (brightness level 1-5), ignore the request
+            print("LED is already on, no action needed")
+            return
+        else:
+            # If the LED is off, turn it back on to the previous brightness
+            send_signal(previous_on_state)
+    elif requested_state == LED_OFF:
+        if led_state != LED_OFF:
+            # Turn off the LED and store the current brightness level
+            previous_on_state = led_state
+            send_signal(LED_OFF)
+    else:
+        # Handle brightness change (1-5)
+        if led_state != requested_state:
+            previous_on_state = led_state  # Update the previous state
+            send_signal(requested_state)
+    
+def get_current_brightness():
+    return led_state
