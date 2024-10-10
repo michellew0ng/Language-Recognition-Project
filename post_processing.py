@@ -4,7 +4,7 @@ import string
 from openai import OpenAI
 import hardware_control
 import light_timer
-import threading
+import key_phrase
 
 buffer = ""
 system_prompt = """
@@ -13,15 +13,14 @@ the transcription, output the transcription exactly as it appears with all punct
 Always translate the transcription into English if needed.
 
 If any part of the string matches or sounds like 'Light On', 'Light Off', 'Brightness 1' or any other number, 
-'Timer 1' or any other number, 'Max Brightness', 'Hey Doc', or 'Timer Cancel', including misspellings or homophones 
+'Timer 1' or any other number, 'Light Dim 1' or any other number, 'Max Brightness', 'Hey Doc', or 'Timer Cancel', including misspellings or homophones 
 (e.g., 'hey dock', 'hey doch', 'timer cansel', etc.), replace those parts of the string with these exact variants.
 
 You must:
 - Replace 'hey doc timer cancel', or any variation with 'heydoctimercancel'.
 - Translate 'apague la luz' or any equivalent to 'light off' (no alternative translations like 'turn off the light').
 - For numbers, ensure the numerical version is used (i.e., use '10' instead of 'ten').
-- Replace the recognized parts with the exact variants specified, and remove all punctuation, filler words, 
-and spaces between words, without altering the remaining content. 
+- Replace the recognized parts with the exact variants specified, and remove all punctuation and filler words, without altering the remaining content. 
 Finally, lowercase everything.
 """
 
@@ -59,22 +58,10 @@ def scan_for_key_phrase(transcription):
     if not transcription:
         print("Empty transcription recieved.")
         return
-    
-    key_phrase_on = 'heydoclighton'
-    key_phrase_off = 'heydoclightoff'
-    key_phrase_level_1 = 'heydocbrightness1'
-    key_phrase_level_2 = 'heydocbrightness2'
-    key_phrase_level_3 = 'heydocbrightness3'
-    key_phrase_level_4 = 'heydocbrightness4'
-    key_phrase_level_5 = 'heydocbrightness5'
-    key_phrase_max = 'heydocmaxbrightness'
-    key_phrase_timer_pattern = r'heydoctimer(\d{1,3})'  # Regex for 'heydoctimer' followed up to 3 digits
-    key_phrase_timer_cancel = 'heydoctimercancel'
-    
-    timer_secs= 0
 
+    # Safeguards to remove all punctuation
     transcription = generate_corrected_transcript(transcription)
-    transcription = remove_punctuation((transcription.lower()).replace(" ", "")) # Safeguards to remove all punctuation
+    transcription = remove_punctuation((transcription.lower()).replace(" ", "")) 
     # ChatGPT is not reliable at doing this
 
     print(f"Final Output: {transcription}")
@@ -82,45 +69,60 @@ def scan_for_key_phrase(transcription):
     buffer += transcription
 
     if light_timer.timer_active:
-        if key_phrase_timer_cancel in buffer:
+        if key_phrase.timer_cancel in buffer:
             light_timer.timer_cancel()
             buffer = ""
-        else:
-            print("Timer is running. Ignoring other commands.")
-            return  # Ignore all other inputs while the timer is active
+        #else:
+        #    print("Timer is running. Ignoring other commands.")
+        #    return  # Ignore all other inputs while the timer is active
+
+    if light_timer.dimmer_active:
+        if key_phrase.dimmer_cancel in buffer:
+            light_timer.timer_dim_cancel()
+            buffer = ""
 
     else:
-        if key_phrase_on in buffer:
+        if key_phrase.on in buffer:
             hardware_control.light_switch(hardware_control.LED_LEVEL_5)
             buffer=""
-        elif key_phrase_off in buffer:
+        elif key_phrase.off in buffer:
             hardware_control.light_switch(hardware_control.LED_OFF)
             buffer=""
-        elif key_phrase_level_1 in buffer:
+        elif key_phrase.level_1 in buffer:
             hardware_control.light_switch(hardware_control.LED_LEVEL_1)
             buffer=""
-        elif key_phrase_level_2 in buffer:
+        elif key_phrase.level_2 in buffer:
             hardware_control.light_switch(hardware_control.LED_LEVEL_2)
             buffer=""
-        elif key_phrase_level_3 in buffer:
+        elif key_phrase.level_3 in buffer:
             hardware_control.light_switch(hardware_control.LED_LEVEL_3)
             buffer=""
-        elif key_phrase_level_4 in buffer:
+        elif key_phrase.level_4 in buffer:
             hardware_control.light_switch(hardware_control.LED_LEVEL_4)
             buffer=""
-        elif key_phrase_level_5 in buffer or key_phrase_max in buffer:
+        elif key_phrase.level_5 in buffer or key_phrase.max_brightness in buffer:
             hardware_control.light_switch(hardware_control.LED_LEVEL_5)
             buffer=""
-        elif key_phrase_timer_cancel in buffer:
+        elif key_phrase.timer_cancel in buffer:
             light_timer.timer_cancel()
             buffer=""
         else:
-            match = re.search(key_phrase_timer_pattern, buffer)
+            # Runs timer command
+            match = re.search(key_phrase.timer_pattern, buffer)
             if match:
                 timer_secs = int(match.group(1))
                 light_timer.timer_start(timer_secs)
                 buffer = ""
-            buffer = buffer [-len(key_phrase_level_1):] # keeps last part of buffer in case overlap
+
+            # Runs dimmer command
+            match = re.search(key_phrase.dimmer_pattern, buffer)
+            if match:
+                timer_secs = int(match.group(1))
+                light_timer.timer_dim(timer_secs)
+                buffer = ""
+
+
+            buffer = buffer [-len(key_phrase.level_1):] # keeps last part of buffer in case overlap
 
     
 
