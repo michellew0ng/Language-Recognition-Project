@@ -48,8 +48,8 @@ def send_signal(light_level):
 def light_switch(requested_state):
     global led_state
     global previous_on_state
-    print(f"requested state {requested_state}")
-    print(f"led_state {led_state}")
+    #print(f"requested state {requested_state}")
+    #print(f"led_state {led_state}")
     
     if requested_state == LED_ON:
         if led_state != LED_OFF:
