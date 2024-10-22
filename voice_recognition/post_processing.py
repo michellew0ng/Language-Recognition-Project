@@ -30,7 +30,6 @@ def remove_punctuation(text):
     return text.translate(translator)
 
 def generate_corrected_transcript(transcription):
-    print(f"Initial audio: {transcription}")
     client = OpenAI()
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -64,7 +63,7 @@ def scan_for_key_phrase(transcription):
     transcription = remove_punctuation((transcription.lower()).replace(" ", "")) 
     # ChatGPT is not reliable at doing this
 
-    print(f"Final Output: {transcription}")
+    print(f"Interpreted: {transcription}")
 
     buffer += transcription
 
