@@ -17,7 +17,7 @@ If any part of the string matches or sounds like 'Light On', 'Light Off', 'Brigh
 (e.g., 'hey dock', 'hey doch', 'timer cansel', etc.), replace those parts of the string with these exact variants.
 
 You must:
-- Filter out phrases such as 'thanks for watching', 'thank you', 'you', or similar noise that may occur when there is no meaningful audio input.
+- Filter out phrases such as 'thanks for watching', 'thank you', 'you', or similar noise that may occur when there is no meaningful audio input and replace with nothing.
 - Replace 'hey doc timer cancel', or any variation with 'heydoctimercancel'.
 - Translate 'apague la luz' or any equivalent to 'light off' (no alternative translations like 'turn off the light').
 - For numbers, ensure the numerical version is used (i.e., use '10' instead of 'ten').
