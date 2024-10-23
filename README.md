@@ -3,13 +3,15 @@
 COMP3601 Project 24T3. Implementing voice recognition to control an LED. 
 Developed by Michelle Wong, Hasitha Peter, and Max Jaroenkitphan
 
+![462536604_546912724753282_2631495542290620869_n](https://github.com/user-attachments/assets/dfdc54bb-c350-4450-8c1d-1fa393f99e07)
 
-### Hardware:
+
+## Hardware:
 1. Kria KV260 FPGA
 2. ADAFruit i2s MEMs Microphone
 3. Ethernet Cable
    
-### Software:
+## Software:
 1. Xilinx Vivado 2021.2
 2. Whisper API
 3. ChatGPT 4.0
@@ -29,6 +31,11 @@ Milestone 4: We are currently converting the captured audio samples into a .wav 
 7. Compile c files on board and run
 8. Transfer the .wav file back to pc using pscp command and play it back.
 
+## Future Integration
+For Milestone 5, we plan to integrate the current system with the python client that has been set up by opening up a socket to allow for bidirectional communication between the i2s driver and the client, and by proxy the kria board to facilitate the complete process of controlling the LED's on and off state.
+
 ## Reference for .wav file format: 
+![image](https://github.com/user-attachments/assets/c11be8a0-79a3-4961-9488-eb59a79f5cb4)
+
 https://ccrma.stanford.edu/courses/422-winter-2014/projects/WaveFormat/#:~:text=A%20WAVE%20file%20is%20often,form%20the%20%22Canonical%20form%22.
 
