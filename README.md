@@ -35,7 +35,5 @@ Milestone 4: We are currently converting the captured audio samples into a .wav 
 For Milestone 5, we plan to integrate the current system with the python client that has been set up by opening up a socket to allow for bidirectional communication between the i2s driver and the client, and by proxy the kria board to facilitate the complete process of controlling the LED's on and off state.
 
 ## Reference for .wav file format: 
-![image](https://github.com/user-attachments/assets/c11be8a0-79a3-4961-9488-eb59a79f5cb4)
-
 https://ccrma.stanford.edu/courses/422-winter-2014/projects/WaveFormat/#:~:text=A%20WAVE%20file%20is%20often,form%20the%20%22Canonical%20form%22.
 
