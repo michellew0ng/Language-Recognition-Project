@@ -1,7 +1,7 @@
 # LED Control using Language Recognition
 
 COMP3601 Project 24T3. Implementing voice recognition to control an LED. 
-Developed by Michelle Wong, Hasitha Peters, and Max Jaroenkitphan
+Developed by Michelle Wong, Hasitha Peter, and Max Jaroenkitphan
 
 ## Milestone 4 
 
@@ -21,6 +21,7 @@ Milestone 4 implements a simple I2S MEMS microphone -> Kria board -> WAV file ou
 
 ### Progress Checkpoints:
 Milestone 3: We were able to capture audio samples by setting up the i2s.master and the fifo.vhd.
+
 Milestone 4: We are currently converting the captured audio samples into a .wav file. The code for this is under the app/src/main.c file.
 
 ### Instructions 
