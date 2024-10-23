@@ -19,7 +19,7 @@ Developed by Michelle Wong, Hasitha Peter, and Max Jaroenkitphan
 
 ## Progress Checkpoint
 Milestone 3: We were able to capture audio signals by setting up the i2s_master.vhd and the fifo.vhd
-Milestone 4: We are currently converting the captured audio samples into a .wav file. The code for this is under the app/src/main.c file.
+Milestone 4: We are currently converting the captured audio samples into a .wav file. The code for this is under the src/main.c file.
 
 ## Instructions 
 1. Connect an ethernet cable running between your Kira board and the PC.
