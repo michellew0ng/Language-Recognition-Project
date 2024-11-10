@@ -200,7 +200,7 @@ void write_wav(unsigned long num_samples, uint32_t *data)
     fclose(wav_file);
 }
 
-int main() {
+int main_m5_task() {
 
     audio_i2s_t my_config;
     if (audio_i2s_init(&my_config) < 0) {

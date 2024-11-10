@@ -6,7 +6,7 @@
 
 #define PORT 54321
 
-int main() {
+int process_signal() {
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
