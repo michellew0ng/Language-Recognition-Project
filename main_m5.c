@@ -170,7 +170,6 @@ void write_wav(unsigned long num_samples, uint32_t *data)
     unsigned int sub_chunk_2 = (bits_per_sample / 8) * num_samples * num_channels;
 
     // Open file and write header -- https://ccrma.stanford.edu/courses/422-winter-2014/projects/WaveFormat/#:~:text=A%20WAVE%20file%20is%20often,form%20the%20%22Canonical%20form%22.
-    create_tmp();
     char filename[100];
     create_filename(filename);
     
@@ -224,6 +223,7 @@ int main() {
     unsigned long sampleNum = 0;
 
     printf("Starting audio_i2s_recv\n");
+    create_tmp();
 
     // calculate how many frames(blocks) we need from the i2s
     // we get data from the i2s with 2 channels but we only need 1 in the wave file
