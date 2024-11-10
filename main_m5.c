@@ -22,8 +22,11 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "audio_i2s.h"
 
@@ -31,6 +34,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include <sys/stat.h> 
+#include <sys/types.h>
 
 #define TRANSFER_RUNS 10
 
@@ -42,10 +47,74 @@
 #define MASK(n) (1 << n) - 1
 
 
-#define FILENAME "filename.wav"
+#define FILENAME_BASE "audio"
+#define TMP_DIR "tmp"
+#define NUM_FILES_BEFORE_CLEAR 10
 
-/* This is a buffer that stores 44100 samples per second for RECORD_DURATION number of seconds*/
+/* Buffer that stores 44100 samples per second for RECORD_DURATION number of seconds*/
 uint32_t recorded_data[SAMPLE_RATE * RECORD_DURATION * NUM_CHANNELS] = {0};
+
+/**
+ * @brief
+ *      Handles creating a tmp directory for all the wav samples
+ */
+void create_tmp(void){
+    struct stat st = {0};
+    if (stat("tmp", &st) == -1) {
+        mkdir(TMP_DIR, 0777);
+    } else {
+        perror("Couldn't properly create tmp\n");
+    }
+}
+
+/**
+ * @brief
+ *      Clears all the files in the tmp directory
+ */
+void clear_tmp_directory(void) {
+    DIR *dir;
+    struct dirent *entry;
+    char filepath[256];
+
+    dir = opendir(TMP_DIR);
+    if (dir == NULL) {
+        perror("Unable to open tmp directory");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        // Skip `.` and `..` entries
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        // Build the full file path
+        snprintf(filepath, sizeof(filepath), "%s/%s", TMP_DIR, entry->d_name);
+        remove(filepath);
+    }
+    closedir(dir);
+}
+
+/**
+ * @brief
+ *      Removes the tmp directory from the system.
+ */
+void remove_tmp_directory() {
+    // Delete the tmp directory itself
+    if (rmdir(TMP_DIR) == 0) {
+        printf("Deleted directory: %s\n", TMP_DIR);
+    } else {
+        perror("Error deleting directory");
+    }
+}
+
+/**
+ * @brief 
+ *      Creates a unique filename based on the current timestamp.
+ * @param buffer The buffer that holds the new filename
+ */
+void create_filename(char *buffer) {
+    snprintf(buffer, sizeof(buffer), "%s/%s_%lu.wav", TMP_DIR, FILENAME_BASE, time(NULL));
+}
 
 /*
     Writes bytes into a file in little endian format
@@ -60,8 +129,6 @@ void write_little_endian(uint32_t word, int num_bytes, FILE *wav_file)
         word >>= 8; // move the next least significant byte down to the least significant bytes position
     }
 }
-
-
 
 /**
  * @brief
@@ -86,7 +153,6 @@ void write_backward_24(uint32_t word, FILE *wav_file) {
 }
 
 
-
 /*
     Writes the header and the data to a wav file.
 */
@@ -104,7 +170,11 @@ void write_wav(unsigned long num_samples, uint32_t *data)
     unsigned int sub_chunk_2 = (bits_per_sample / 8) * num_samples * num_channels;
 
     // Open file and write header -- https://ccrma.stanford.edu/courses/422-winter-2014/projects/WaveFormat/#:~:text=A%20WAVE%20file%20is%20often,form%20the%20%22Canonical%20form%22.
-    FILE* wav_file = fopen(FILENAME, "wb");
+    create_tmp();
+    char filename[100];
+    create_filename(filename);
+    
+    FILE* wav_file = fopen(filename, "wb");
 
     // RIFF header
     fwrite("RIFF", 1, 4, wav_file); // ChunkID
@@ -130,10 +200,6 @@ void write_wav(unsigned long num_samples, uint32_t *data)
 
     fclose(wav_file);
 }
-
-
-
-
 
 int main() {
 
@@ -177,9 +243,23 @@ int main() {
     }
 
     printf("Start convert to wav file\n");
-    write_wav(RECORD_DURATION * SAMPLE_RATE, recorded_data);
-    audio_i2s_release(&my_config);
-    printf("File written\n");
+
+    int audio_count = 0;
+    while (1) {
+        // Clear audio count every 10 samples to keep tmp folder clean
+        if (audio_count == NUM_FILES_BEFORE_CLEAR) {
+            audio_count = 0;
+            clear_tmp_directory();
+        }
+        write_wav(RECORD_DURATION * SAMPLE_RATE, recorded_data);
+        audio_i2s_release(&my_config);
+        printf("File written\n");
+        audio_count++;
+
+    }
+
+    clear_tmp_directory();
+    remove_tmp_directory();
 
     return 0;
 }
