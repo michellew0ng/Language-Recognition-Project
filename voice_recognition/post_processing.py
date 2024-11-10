@@ -2,6 +2,7 @@
 import re
 import string
 from openai import OpenAI
+import led_state
 import hardware_control
 import light_timer
 import key_phrase
@@ -82,25 +83,25 @@ def scan_for_key_phrase(transcription):
 
     else:
         if key_phrase.on in buffer:
-            hardware_control.light_switch(hardware_control.LED_LEVEL_5)
+            hardware_control.light_switch(led_state.LED_LEVEL_5)
             buffer=""
         elif key_phrase.off in buffer:
-            hardware_control.light_switch(hardware_control.LED_OFF)
+            hardware_control.light_switch(led_state.LED_OFF)
             buffer=""
         elif key_phrase.level_1 in buffer:
-            hardware_control.light_switch(hardware_control.LED_LEVEL_1)
+            hardware_control.light_switch(led_state.LED_LEVEL_1)
             buffer=""
         elif key_phrase.level_2 in buffer:
-            hardware_control.light_switch(hardware_control.LED_LEVEL_2)
+            hardware_control.light_switch(led_state.LED_LEVEL_2)
             buffer=""
         elif key_phrase.level_3 in buffer:
-            hardware_control.light_switch(hardware_control.LED_LEVEL_3)
+            hardware_control.light_switch(led_state.LED_LEVEL_3)
             buffer=""
         elif key_phrase.level_4 in buffer:
-            hardware_control.light_switch(hardware_control.LED_LEVEL_4)
+            hardware_control.light_switch(led_state.LED_LEVEL_4)
             buffer=""
         elif key_phrase.level_5 in buffer or key_phrase.max_brightness in buffer:
-            hardware_control.light_switch(hardware_control.LED_LEVEL_5)
+            hardware_control.light_switch(led_state.LED_LEVEL_5)
             buffer=""
         elif key_phrase.timer_cancel in buffer:
             light_timer.timer_cancel()
@@ -122,7 +123,3 @@ def scan_for_key_phrase(transcription):
 
 
             buffer = buffer [-len(key_phrase.level_1):] # keeps last part of buffer in case overlap
-
-    
-
-
