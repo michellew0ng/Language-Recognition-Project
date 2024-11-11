@@ -37,7 +37,10 @@ void clear_tmp_directory(void) {
         return;
     }
 
+    
+
     while ((entry = readdir(dir)) != NULL) {
+        if (entry == NULL || entry->d_name == NULL) continue;
         // Skip `.` and `..` entries
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
@@ -68,8 +71,8 @@ void remove_tmp_directory() {
  *      Creates a unique filename based on the current timestamp.
  * @param buffer The buffer that holds the new filename
  */
-void create_filename(char *buffer) {
-    snprintf(buffer, sizeof(buffer), "%s/%s_%lu.wav", TMP_DIR, FILENAME_BASE, time(NULL));
+void create_filename(char *buffer, size_t buffer_size) {
+    snprintf(buffer, buffer_size, "%s/%s_%lu.wav", TMP_DIR, FILENAME_BASE, time(NULL));
 }
 
 /*
