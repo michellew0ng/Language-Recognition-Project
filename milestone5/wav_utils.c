@@ -4,11 +4,10 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include "include/share.h"
+#include "include/wav_utils.h"
 
 #define FILENAME_BASE "audio"
 #define TMP_DIR "tmp"
-#define NUM_FILES_BEFORE_CLEAR 10
 
 /**
  * @brief
