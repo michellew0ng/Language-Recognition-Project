@@ -53,7 +53,7 @@ uint32_t recorded_data[SAMPLE_RATE * RECORD_DURATION * NUM_CHANNELS] = {0};
 *   @brief 
 *       Writes the header and the data to a wav file.
 */
-void write_wav(unsigned long num_samples, uint32_t *data)
+void write_wav(unsigned long num_samples, uint32_t *data, char *filename)
 {
     // Audio information
     unsigned int sample_rate = SAMPLE_RATE;
@@ -67,8 +67,6 @@ void write_wav(unsigned long num_samples, uint32_t *data)
     unsigned int sub_chunk_2 = (bits_per_sample / 8) * num_samples * num_channels;
 
     // Open file and write header -- https://ccrma.stanford.edu/courses/422-winter-2014/projects/WaveFormat/#:~:text=A%20WAVE%20file%20is%20often,form%20the%20%22Canonical%20form%22.
-    char filename[100];
-    create_filename(filename);
     
     FILE* wav_file = fopen(filename, "wb");
 
@@ -117,7 +115,6 @@ int send_wav() {
     printf("After writing to gain: %08x\n", audio_i2s_get_reg(&my_config, AUDIO_I2S_GAIN));
     printf("Initialized audio_i2s\n");
 
-    unsigned long sampleNum = 0;
 
     printf("Starting audio_i2s_recv\n");
     create_tmp();
@@ -127,20 +124,7 @@ int send_wav() {
     // meanwhile, for each channel, the last 2 samples each frame are useless, so we need to ignore them ass well.
     int sampleCounter = SAMPLE_RATE * RECORD_DURATION * 2 / (TRANSFER_LEN - 4);
 
-    for (int i = 0; i < sampleCounter; i++) {
-        int32_t *samples = audio_i2s_recv(&my_config);
-        printf("i2s counter: %d\n", i); // use printf to slow down the loop, so that the i2s buffer can refill
-        for (int j = 0; j < TRANSFER_LEN - 4; j++) {
-            // record both channels 
-            if (j % 2 == 0) {
-                recorded_data[sampleNum + j] = samples[j];
-            }
-        }
-        sampleNum += TRANSFER_LEN - 4;
-    }
-
-    printf("Start convert to wav file\n");
-
+    unsigned long sampleNum = 0; 
     int audio_count = 0;
     while (1) {
         // Clear audio count every 10 samples to keep tmp folder clean
@@ -148,13 +132,28 @@ int send_wav() {
             audio_count = 0;
             clear_tmp_directory();
         }
-        write_wav(RECORD_DURATION * SAMPLE_RATE, recorded_data);
-        audio_i2s_release(&my_config);
-        printf("File written\n");
+
+        for (int i = 0; i < sampleCounter; i++) {
+            int32_t *samples = audio_i2s_recv(&my_config);
+            printf("i2s counter: %d\n", i); // use printf to slow down the loop, so that the i2s buffer can refill
+            for (int j = 0; j < TRANSFER_LEN - 4; j++) {
+                // record both channels 
+                if (j % 2 == 0) {
+                    recorded_data[sampleNum + j] = samples[j];
+                }
+            }
+            sampleNum += TRANSFER_LEN - 4;
+        }
+        char filename[100];
+        create_filename(filename, sizeof(filename));
+    
+        write_wav(RECORD_DURATION * SAMPLE_RATE, recorded_data, filename);
+        
+        printf("File complete: %s\n");
         audio_count++;
 
     }
-
+    audio_i2s_release(&my_config);
     clear_tmp_directory();
     remove_tmp_directory();
 
