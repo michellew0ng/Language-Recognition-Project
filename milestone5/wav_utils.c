@@ -3,6 +3,11 @@
 #include <sys/stat.h> 
 #include <sys/types.h>
 #include <dirent.h>
+#include <string.h>
+#include <unistd.h>  // For rmdir
+#include <stdint.h>
+
+#include <time.h>
 
 #include "include/wav_utils.h"
 
