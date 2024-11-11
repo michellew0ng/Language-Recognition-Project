@@ -13,7 +13,7 @@ int main() {
     int opt = 1;
     int addrlen = sizeof(address);
     char buffer[1024] = {0};
-    
+
     // Pointer to the memory-mapped address
     volatile unsigned int *vhdl_signal = (unsigned int *)MEMORY_MAPPED_ADDR;
 
@@ -41,7 +41,7 @@ int main() {
     } else if (buffer[0] == 'B' && strlen(buffer) > 1) {
         int brightness = atoi(buffer + 1);
         if (brightness >= 1 && brightness <= 255) {
-            *vhdl_signal = brightness;  // Set brightness
+            *vhdl_signal = brightness & 0xFF;  // Mask to 8 bits for VHDL compatibility
         }
     } else {
         printf("Invalid command received: %s\n", buffer);
@@ -53,4 +53,3 @@ int main() {
 
     return 0;
 }
-
