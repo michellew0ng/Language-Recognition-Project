@@ -35,16 +35,20 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#define PORT 49152
+#define SERVER_IP "192.168.1.1"
+
 #define TRANSFER_RUNS 10
 
 #define NUM_CHANNELS 2
 #define BPS 24
 #define SAMPLE_RATE 44100
-#define RECORD_DURATION 25
+#define RECORD_DURATION 10
 
 #define NUM_FILES_BEFORE_CLEAR 10
 
 #define MASK(n) (1 << n) - 1
+#define BUFFER_SIZE 1024
 
 /* Buffer that stores 44100 samples per second for RECORD_DURATION number of seconds*/
 uint32_t recorded_data[SAMPLE_RATE * RECORD_DURATION * NUM_CHANNELS] = {0};
@@ -116,6 +120,30 @@ int send_wav() {
     printf("Initialized audio_i2s\n");
 
 
+    int sock;
+    struct sockaddr_in serv_addr;
+    FILE *fp;
+    char buffer[BUFFER_SIZE];
+
+    // Create a UDP socket
+    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("Socket creation error");
+        return -1;
+    }
+
+    // Set up server address
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+
+    // Convert IP address
+    if (inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0) {
+        perror("Invalid address / Address not supported");
+        close(sock);
+        return -1;
+    }
+
+
     printf("Starting audio_i2s_recv\n");
     create_tmp();
 
@@ -124,9 +152,9 @@ int send_wav() {
     // meanwhile, for each channel, the last 2 samples each frame are useless, so we need to ignore them ass well.
     int sampleCounter = SAMPLE_RATE * RECORD_DURATION * 2 / (TRANSFER_LEN - 4);
 
-    unsigned long sampleNum = 0; 
     int audio_count = 0;
     while (1) {
+        unsigned long sampleNum = 0; 
         // Clear audio count every 10 samples to keep tmp folder clean
         if (audio_count == NUM_FILES_BEFORE_CLEAR) {
             audio_count = 0;
@@ -146,15 +174,48 @@ int send_wav() {
         }
         char filename[100];
         create_filename(filename, sizeof(filename));
-    
-        write_wav(RECORD_DURATION * SAMPLE_RATE, recorded_data, filename);
+        write_wav(RECORD_DURATION * SAMPLE_RATE * NUM_CHANNELS, recorded_data, filename);
+
+         // Open .wav file for reading
+        fp = fopen(filename, "rb");
+        if (fp == NULL) {
+            perror("Failed to open .wav file");
+            close(sock);
+            return -1;
+        }
+        // Send file data in chunks
+        size_t n;
+        while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+            if (sendto(sock, buffer, n, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+                perror("Error sending data");
+                fclose(fp);
+                close(sock);
+                return -1;
+            }
+            if (n < sizeof(buffer)) {
+                if (feof(fp)) {
+                    printf("File transfer completed successfully.\n");
+                }
+                if (ferror(fp)) {
+                    perror("Error reading from .wav file");
+                }
+                break;
+            }
+        }
+
+        // Send an "END" message to signal the end of file transfer
+        char end_signal[] = "END";
+        sendto(sock, end_signal, sizeof(end_signal), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
         
-        printf("File complete: %s\n");
+        fclose(fp);
+    
+        printf("File complete: %s\n", filename);
         audio_count++;
 
     }
+    close(sock);
     audio_i2s_release(&my_config);
-    clear_tmp_directory();
+    //clear_tmp_directory();
     remove_tmp_directory();
 
     return 0;
