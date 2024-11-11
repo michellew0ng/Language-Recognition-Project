@@ -3,20 +3,21 @@ import speech_recognition as sr
 import io
 import time
 import queue
+import wave
 from openai import OpenAI
 import threading
 from audio_processing import whisper_send_and_receive
 from post_processing import scan_for_key_phrase
 import led_state
 
-ETHERNET_IP = ''
 
-ETHERNET_PORT = 54321
+
+ETHERNET_PORT = 49152
 BUFFER_SIZE = 1024  # Size of each data packet received
 SERVER_IP = '192.168.1.1'
 QUEUE_SIZE = 100 # Max packets in queue
 
-client = OpenAI()
+client = OpenAI(api_key = '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')
 
 ##### SOLN 1: Recieves audio from laptop mic (PROOF OF CONCEPT) #####
 
@@ -61,6 +62,18 @@ def stream_audio_from_mic(chunk_duration=3):
 ##### SOLN 2: Recieves audio from AXI bus ####
 # Uses threading to account for dropped packets
 
+def save_buffer_as_wav(buffer, sample_rate=44100, num_channels=2, sample_width=2):
+    wav_data = io.BytesIO()
+    with wave.open(wav_data, 'wb') as wav_file:
+        wav_file.setnchannels(num_channels)
+        wav_file.setsampwidth(sample_width)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(buffer)
+
+    wav_data.seek(0)
+
+    return wav_data
+
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((SERVER_IP, ETHERNET_PORT))
 data_queue = queue.Queue(maxsize=QUEUE_SIZE)
@@ -69,35 +82,45 @@ LED_OFF_SIGNAL = 'F'
 
 def rcv_audio_data():
     while True:
+        print("I AM CURRENTLY RECIEVING")
         try:
             # Receive data from AXI over Ethernet
+            print("BEFORE")
             audio, addr = sock.recvfrom(BUFFER_SIZE)
-            if audio == b'END':
+            print("AFTER")
+            #print(f"I CAN SEE THIS DATA: {audio}")
+            if audio in b'END':
                 data_queue.put(b'END')  # Signal processing thread to stop
                 continue
 
             if not data_queue.full():
                 data_queue.put(audio)
+                print("i have the audio now")
             else:
                 print("Warning: Queue is full. Dropping packet.")
 
         except Exception as e:
             print(f"Error while recieving data: {e}")
 
+buffer = bytearray()
+
 # Process audio data from the queue
 def process_audio_data():
-    buffer = bytearray()
     while True:
+        print("i am processing the audio now")
         try:
+            print("getting the data")
             data = data_queue.get()
 
-            if data == b'END':
+            if b'END' in data:
                 if buffer:
-                    response = whisper_send_and_receive(buffer)
-                    led_output = scan_for_key_phrase(response)
+                    response = whisper_send_and_receive(save_buffer_as_wav(buffer))
+                    print("I have sent to whisper")
+                    scan_for_key_phrase(response)
+                    print("I tried to scan for a key phrase")
                     buffer.clear()
                 continue
-            
+            print("Didn't see end, my buffer's longer now!")
             buffer.extend(data)
 
         except Exception as e:
