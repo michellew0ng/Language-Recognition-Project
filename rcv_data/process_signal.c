@@ -5,71 +5,49 @@
 #include <arpa/inet.h>
 
 #define PORT 54321
+#define MEMORY_MAPPED_ADDR 0xA0020000
 
-int process_signal() {
+int main() {
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
     char buffer[1024] = {0};
-    volatile unsigned int *vhdl_signal = (unsigned int *)0xA0020000; // Replace with appropriate memory-mapped address
 
-    // Create socket file descriptor
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("Socket failed");
-        exit(EXIT_FAILURE);
-    }
+    // Pointer to the memory-mapped address
+    volatile unsigned int *vhdl_signal = (unsigned int *)MEMORY_MAPPED_ADDR;
 
-    // Forcefully attaching socket to the port
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-        perror("setsockopt");
-        close(server_fd);
-        exit(EXIT_FAILURE);
-    }
-
+    // Create socket
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
+    bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+    listen(server_fd, 3);
 
-    // Bind the socket
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("Bind failed");
-        close(server_fd);
-        exit(EXIT_FAILURE);
-    }
+    printf("Waiting for connection on port %d...\n", PORT);
+    new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
 
-    // Listen for incoming connections
-    if (listen(server_fd, 3) < 0) {
-        perror("Listen failed");
-        close(server_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Waiting for a connection on port %d...\n", PORT);
-
-    // Accept an incoming connection
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
-        perror("Accept failed");
-        close(server_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    // Read data from the client
+    // Read command from client
     int valread = read(new_socket, buffer, 1024);
-    printf("Received data: %s\n", buffer);
+    buffer[valread] = '\0';
 
-    // Check the signal received and send it to the VHDL module
-    if (strstr(buffer, "T") != NULL) {
-        *vhdl_signal = 1;  // Send signal to turn on
-        printf("VHDL signal set to TURN ON\n");
-    } else if (strstr(buffer, "F") != NULL) {
-        *vhdl_signal = 0;  // Send signal to turn off
-        printf("VHDL signal set to TURN OFF\n");
+    // Parse the command and write to memory-mapped address
+    if (strcmp(buffer, "T") == 0) {
+        *vhdl_signal = 1;  // Turn LED ON
+    } else if (strcmp(buffer, "F") == 0) {
+        *vhdl_signal = 0;  // Turn LED OFF
+    } else if (buffer[0] == 'B' && strlen(buffer) > 1) {
+        int brightness = atoi(buffer + 1);
+        if (brightness >= 1 && brightness <= 255) {
+            *vhdl_signal = brightness & 0xFF;  // Mask to 8 bits for VHDL compatibility
+        }
     } else {
-        printf("Unknown command\n");
+        printf("Invalid command received: %s\n", buffer);
     }
 
-    // Close the sockets
+    // Close sockets
     close(new_socket);
     close(server_fd);
 
