@@ -42,6 +42,8 @@
 #define SAMPLE_RATE 44100
 #define RECORD_DURATION 25
 
+#define NUM_FILES_BEFORE_CLEAR 10
+
 #define MASK(n) (1 << n) - 1
 
 /* Buffer that stores 44100 samples per second for RECORD_DURATION number of seconds*/
