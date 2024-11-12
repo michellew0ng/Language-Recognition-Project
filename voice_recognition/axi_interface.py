@@ -6,6 +6,8 @@ import time
 import queue
 import wave
 import sys
+import zlib
+from collections import OrderedDict
 
 from openai import OpenAI
 import threading
@@ -16,11 +18,12 @@ import led_state
 
 
 ETHERNET_PORT = 49152
-BUFFER_SIZE = 1024  # Size of each data packet received
+BUFFER_SIZE = 65507  # Size of each data packet received
 SERVER_IP = '192.168.1.1'
 QUEUE_SIZE = 100 # Max packets in queue
 
-client = OpenAI()
+client = OpenAI(api_key = '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'
+)
 
 ##### SOLN 1: Recieves audio from laptop mic (PROOF OF CONCEPT) #####
 
@@ -46,7 +49,7 @@ def stream_audio_from_mic(chunk_duration=3):
                 wav_data = audio.get_wav_data()
                 wav_file = io.BytesIO(wav_data)
                 wav_file.name = "audio.wav"
-                wav_file.seek(0);
+                wav_file.seek(0)
                 
                 transcription = whisper_send_and_receive(client, wav_file)
                 scan_for_key_phrase(transcription)
@@ -73,20 +76,29 @@ LED_OFF_SIGNAL = 'F'
 stop_event = threading.Event()
 
 def rcv_audio_data(sock):
+
     while True:
-        print("I AM CURRENTLY RECIEVING")
+       # print("I AM CURRENTLY RECIEVING")
         try:
             # Receive data from AXI over Ethernet
-            print("BEFORE")
+           # print("BEFORE")
             audio, addr = sock.recvfrom(BUFFER_SIZE)
-            print("AFTER")
+           # print("AFTER")
             #print(f"I CAN SEE THIS DATA: {audio}")
-            if audio in b'END':
+            if audio == b'END':
                 data_queue.put(b'END')  # Signal processing thread to stop
                 continue
 
+             # Ensure the packet is large enough to contain the sequence number and data
+            if len(audio) < 2:
+                print("Received packet is too small, skipping.")
+                continue
+             # Extract the 2-byte sequence number from the start of each packet
+            seq_num = (audio[0] << 8) + audio[1]
+            data = audio[2:]  # The remaining bytes are the compressed audio data
+
             if not data_queue.full():
-                data_queue.put(audio)
+                data_queue.put((data, seq_num))
                 print("i have the audio now")
             else:
                 print("Warning: Queue is full. Dropping packet.")
@@ -94,30 +106,61 @@ def rcv_audio_data(sock):
         except Exception as e:
             print(f"Error while recieving data: {e}")
 
-buffer = bytearray()
+#buffer = bytearray()
 
 # Process audio data from the queue
 def process_audio_data():
+    compressed_data = bytearray()
+    packet_buffer = OrderedDict()  # Buffer to store packets by sequence number
+    expected_seq = 0  # Expected sequence number for ordering
+    
     while not stop_event.is_set():
         print("i am processing the audio now")
         try:
             print("getting the data")
-            data = data_queue.get()
+            item = data_queue.get()
+            #data = data_queue.get()
 
-            if data == b'END':
-                if buffer:
-                    conv_audio = io.BytesIO(buffer)
-                    conv_audio.seek(0)
-                    response = whisper_send_and_receive(client, conv_audio)
-                    scan_for_key_phrase(response)
-                    print("I tried to scan for a key phrase")
-                    buffer.clear()
+            if item == b'END':
+                # Concatenate buffered packets in the correct order
+                for seq, chunk in sorted(packet_buffer.items()):
+                    if seq == expected_seq:
+                        compressed_data.extend(chunk)
+                        expected_seq += 1
+                    else:
+                        print(f"Warning: Missing packet with sequence {expected_seq}")
+                        break  # Exit if a packet is missing to avoid corrupt data
+
+                if compressed_data:
+                    try:
+                        decompressed_data = zlib.decompress(compressed_data, wbits=-15)
+                        conv_audio = io.BytesIO(decompressed_data)
+                        conv_audio.seek(0)
+                        response = whisper_send_and_receive(client, conv_audio)
+                        scan_for_key_phrase(response)
+                        print("I tried to scan for a key phrase")
+                        compressed_data.clear()
+                    except zlib.error as e:
+                        print(f"Decompression error: {e}")
+                    compressed_data.clear()  # Clear data if decompression fails
+                    packet_buffer.clear()
+                    expected_seq = 0
                 continue
-            print("Didn't see end, my buffer's longer now!")
-            buffer.extend(data)
 
+            data, seq_num = item
+            print("Didn't see end, my buffer's longer now!")
+            # Store the packet in the buffer based on its sequence number
+            if seq_num == expected_seq:
+                compressed_data.extend(data)
+                expected_seq += 1
+            else:
+                packet_buffer[seq_num] = data
+           
         except Exception as e:
             print(f"Error while processing data: {e}")
+
+        except Exception as e:
+            print(f"Unexpected error: {e}")
 
 # Initialises threads and streams audio from axi bus
 def stream_audio_from_axi():

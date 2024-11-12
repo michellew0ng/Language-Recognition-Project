@@ -2,28 +2,43 @@ import socket
 import wave
 import numpy as np
 import time
+import zlib
 
 def receive_wav_files():
-    server_address = ('localhost', 6000)
+    server_address = ('192.168.1.1', 49152)
     file_counter = 0
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.connect(server_address)
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as client_socket:
+        client_socket.bind(server_address)
         print("Connected to server.")
 
         while True:
             filename = f"received_{file_counter}.wav"
+            decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
+            compressed_data = bytearray()
+
             with open(filename, 'wb') as wav_file:
                 print(f"Receiving {filename}...")
 
                 while True:
                     print("fuck")
                     #time.sleep(0.01)
-                    chunk = client_socket.recv(1024)
+                    chunk, addr = client_socket.recvfrom(65507)
                     if chunk == b'END':
                         print(f"Finished receiving {filename}.")
                         break
-                    wav_file.write(chunk)
+                    compressed_data.extend(chunk[2:])
+                    wav_file.write(chunk[2:])
+
+                try:
+                    #decompressed_data = zlib.decompress(compressed_data, -zlib.MAX_WBITS)
+                    decompressed_data = decompressor.decompress(compressed_data)
+                    decompressed_data += decompressor.flush()  # Ensure all remaining data is flushed
+                    with open(filename, 'wb') as wav_file:
+                        wav_file.write(decompressed_data)
+                    print(f"Decompressed and saved {filename}.")
+                except zlib.error as e:
+                    print(f"Decompression error: {e}")
             
             validate_wav_file(filename)
             file_counter += 1
