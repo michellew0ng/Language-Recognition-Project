@@ -22,8 +22,7 @@ BUFFER_SIZE = 65507  # Size of each data packet received
 SERVER_IP = '192.168.1.1'
 QUEUE_SIZE = 100 # Max packets in queue
 
-client = OpenAI(api_key = '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'
-)
+client = OpenAI()
 
 ##### SOLN 1: Recieves audio from laptop mic (PROOF OF CONCEPT) #####
 
