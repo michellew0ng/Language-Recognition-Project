@@ -26,7 +26,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
+<<<<<<< HEAD
 #include <zlib.h>
+=======
+>>>>>>> e9538a9ee1bb56ef2a75c29bb5dbc0e456447330
 
 #include "include/audio_i2s.h"
 #include "include/wav_utils.h"
@@ -49,9 +52,13 @@
 #define NUM_FILES_BEFORE_CLEAR 10
 
 #define MASK(n) (1 << n) - 1
+<<<<<<< HEAD
 #define BUFFER_SIZE 1400
 #define COMPRESSED_BUFFER_SIZE 1400  // Buffer for compressed data
 
+=======
+#define BUFFER_SIZE 1024
+>>>>>>> e9538a9ee1bb56ef2a75c29bb5dbc0e456447330
 
 /* Buffer that stores 44100 samples per second for RECORD_DURATION number of seconds*/
 uint32_t recorded_data[SAMPLE_RATE * RECORD_DURATION * NUM_CHANNELS] = {0};
@@ -127,7 +134,10 @@ int send_wav() {
     struct sockaddr_in serv_addr;
     FILE *fp;
     char buffer[BUFFER_SIZE];
+<<<<<<< HEAD
     unsigned char compressed_buffer[COMPRESSED_BUFFER_SIZE];  // Buffer for compressed data
+=======
+>>>>>>> e9538a9ee1bb56ef2a75c29bb5dbc0e456447330
 
     // Create a UDP socket
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -187,6 +197,7 @@ int send_wav() {
             close(sock);
             return -1;
         }
+<<<<<<< HEAD
 
          // Initialize zlib compression stream
         z_stream stream;
@@ -233,10 +244,29 @@ int send_wav() {
 
             if (feof(fp)) {
                 printf("File transfer completed successfully.\n");
+=======
+        // Send file data in chunks
+        size_t n;
+        while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+            if (sendto(sock, buffer, n, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+                perror("Error sending data");
+                fclose(fp);
+                close(sock);
+                return -1;
+            }
+            if (n < sizeof(buffer)) {
+                if (feof(fp)) {
+                    printf("File transfer completed successfully.\n");
+                }
+                if (ferror(fp)) {
+                    perror("Error reading from .wav file");
+                }
+>>>>>>> e9538a9ee1bb56ef2a75c29bb5dbc0e456447330
                 break;
             }
         }
 
+<<<<<<< HEAD
 
          // Finalize compression and send remaining data
         stream.avail_in = 0;
@@ -276,6 +306,13 @@ int send_wav() {
         usleep(200000);  // 100 ms delay between files
         fclose(fp);
         deflateEnd(&stream);  // Clean up compression stream
+=======
+        // Send an "END" message to signal the end of file transfer
+        char end_signal[] = "END";
+        sendto(sock, end_signal, sizeof(end_signal), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+        
+        fclose(fp);
+>>>>>>> e9538a9ee1bb56ef2a75c29bb5dbc0e456447330
     
         printf("File complete: %s\n", filename);
         audio_count++;
