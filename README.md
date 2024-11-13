@@ -27,4 +27,4 @@ Milestone 4 implements a simple I2S MEMS microphone -> Kria board -> WAV file ou
 
 ## Milestone 5
 
-Milestone 5 implements realtime data streaming through the microphone over Ethernet to be processed by a Python client and control the state of an LED based on command.
+Milestone 5 implements realtime data streaming through the microphone over Ethernet to be processed by a Python client and control the state of an LED based on voice command.
